@@ -1,0 +1,7 @@
+*.epub
+ido.last
+nov-places
+org-persist/
+elpa/
+*.elc
+dot.emacs.backup.*
