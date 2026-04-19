@@ -37,7 +37,7 @@
 ;; ============================================================
 (defun yuleshow-read-food-list ()
   "Read the general food list from list-foods.txt."
-  (let ((file-path "/Users/yuleshow/Library/CloudStorage/GoogleDrive-yuleshow@gmail.com/My Drive/Writing/EatingDiary/list-foods.txt"))
+  (let ((file-path "~/yuleshow@gmail.com/Writing/EatingDiary/list-foods.txt"))
     (if (file-exists-p file-path)
         (with-temp-buffer
           (insert-file-contents file-path)
@@ -45,7 +45,7 @@
       (list "Error: list-foods.txt not found"))))
 
 (setq org-capture-templates
-      '(("f" "飲食日誌" entry (file+headline "/Users/yuleshow/Library/CloudStorage/GoogleDrive-yuleshow@gmail.com/My Drive/Writing/EatingDiary/yuleshow.org" "Dietary Log")
+      '(("f" "飲食日誌" entry (file+headline "~/yuleshow@gmail.com/Writing/EatingDiary/yuleshow.org" "Dietary Log")
          "* %t %^{餐點|早飯|中飯|夜飯}\n  - [ ] %^{食物名稱|%(yuleshow-read-food-list)} %?")))
 
 (defun yuleshow-insert-food-item ()
@@ -94,7 +94,7 @@
 (defun my/insert-food-tag-full ()
   "Search and insert the FULL heritage path."
   (interactive)
-  (let* ((file-path "/Users/yuleshow/Library/CloudStorage/GoogleDrive-yuleshow@gmail.com/My Drive/Writing/EatingDiary/list-foods.txt")
+  (let* ((file-path "~/yuleshow@gmail.com/Writing/EatingDiary/list-foods.txt")
          (options (with-temp-buffer
                     (insert-file-contents file-path)
                     (split-string (buffer-string) "\n" t)))
@@ -105,7 +105,7 @@
 (defun my/insert-food-tag-only ()
   "Search the full heritage, but insert ONLY the dish name."
   (interactive)
-  (let* ((file-path "/Users/yuleshow/Library/CloudStorage/GoogleDrive-yuleshow@gmail.com/My Drive/Writing/EatingDiary/list-foods.txt")
+  (let* ((file-path "~/yuleshow@gmail.com/Writing/EatingDiary/list-foods.txt")
          (options (with-temp-buffer
                     (insert-file-contents file-path)
                     (split-string (buffer-string) "\n" t)))
@@ -124,7 +124,7 @@
 ;; ============================================================
 (defun yuleshow-read-restaurant-list ()
   "Read the restaurant directory from the Google Drive path."
-  (let ((file-path "/Users/yuleshow/Library/CloudStorage/GoogleDrive-yuleshow@gmail.com/My Drive/Writing/EatingDiary/list-restaurants.txt"))
+  (let ((file-path "~/yuleshow@gmail.com/Writing/EatingDiary/list-restaurants.txt"))
     (if (file-exists-p file-path)
         (with-temp-buffer
           (insert-file-contents file-path)
@@ -177,7 +177,7 @@ Expected format: Name|Address|City|State|ChineseName|Cuisine"
 ;; ============================================================
 (defun yuleshow-read-shopping-list ()
   "Read the shopping directory from the Google Drive path."
-  (let ((file-path "/Users/yuleshow/Library/CloudStorage/GoogleDrive-yuleshow@gmail.com/My Drive/Writing/EatingDiary/list-shopping.txt"))
+  (let ((file-path "~/yuleshow@gmail.com/Writing/EatingDiary/list-shopping.txt"))
     (if (file-exists-p file-path)
         (with-temp-buffer
           (insert-file-contents file-path)
@@ -228,7 +228,7 @@ Expected format: Name|Address|City|State|ChineseName"
 ;; ============================================================
 (defun yuleshow-read-medical-list ()
   "Read the medical facility directory from the Google Drive path."
-  (let ((file-path "/Users/yuleshow/Library/CloudStorage/GoogleDrive-yuleshow@gmail.com/My Drive/Writing/EatingDiary/list-medical.txt"))
+  (let ((file-path "~/yuleshow@gmail.com/Writing/EatingDiary/list-medical.txt"))
     (if (file-exists-p file-path)
         (with-temp-buffer
           (insert-file-contents file-path)
@@ -273,7 +273,7 @@ Expected format: Name|Address|City|State|ChineseName"
 ;; ============================================================
 (defun yuleshow-read-library-list ()
   "Read the library directory from the Google Drive path."
-  (let ((file-path "/Users/yuleshow/Library/CloudStorage/GoogleDrive-yuleshow@gmail.com/My Drive/Writing/EatingDiary/list-library.txt"))
+  (let ((file-path "~/yuleshow@gmail.com/Writing/EatingDiary/list-library.txt"))
     (if (file-exists-p file-path)
         (with-temp-buffer
           (insert-file-contents file-path)

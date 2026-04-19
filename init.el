@@ -349,7 +349,7 @@
             (with-current-buffer buf
               (text-scale-set 3))))))
     (message "Yuleshow loaded. C-1..7=CN font, M-1..6=EN font, C-t 1..9=theme")
-    (find-file "/Users/yuleshow/yuleshow@gmail.com/Org Notes/yuleshow.org")
+    (find-file "~/yuleshow@gmail.com/Org Notes/yuleshow.org")
     ;; Apply OrgTheme to the startup org buffer
     (yuleshow-org-theme)))
 
@@ -514,8 +514,7 @@ With prefix argument, use full path."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages
-   '(bing-dict jinx markdown-mode nov orderless valign vertico)))
+ '(package-selected-packages nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
