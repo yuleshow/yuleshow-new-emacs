@@ -499,6 +499,46 @@ With prefix argument, use full path."
 (global-set-key (kbd "C-x t") #'my-insert-time)
 
 ;; ============================================================
+;; 17.5. Flyspell: on-the-fly spell checking (hunspell)
+;; ============================================================
+;; 1. Locate hunspell per OS
+(pcase yuleshow-os
+  ('macos
+   ;; macOS: Homebrew (Apple Silicon or Intel)
+   (let ((hunspell-path
+          (cond ((file-exists-p "/opt/homebrew/bin/hunspell") "/opt/homebrew/bin/hunspell")
+                ((file-exists-p "/usr/local/bin/hunspell")    "/usr/local/bin/hunspell"))))
+     (when hunspell-path
+       (setq ispell-program-name hunspell-path)))
+   ;; Tell hunspell where user dictionaries live on macOS
+   (setenv "DICPATH" (expand-file-name "~/Library/Spelling")))
+
+  ('linux
+   ;; Linux: use hunspell from $PATH (apt/pacman/dnf install hunspell hunspell-en-us)
+   (let ((hunspell-path (executable-find "hunspell")))
+     (when hunspell-path
+       (setq ispell-program-name hunspell-path))))
+
+  ('windows
+   ;; Windows: try hunspell if on PATH
+   (let ((hunspell-path (executable-find "hunspell")))
+     (when hunspell-path
+       (setq ispell-program-name hunspell-path)))))
+
+;; 2. Default dictionary: US English
+(setq ispell-dictionary "en_US")
+
+;; 3. Auto-enable Flyspell when a spell program is available
+(when (and (boundp 'ispell-program-name) ispell-program-name)
+  (add-hook 'text-mode-hook #'flyspell-mode)
+  (add-hook 'prog-mode-hook #'flyspell-prog-mode)
+  ;; Apply to already-existing buffers (e.g. *scratch*) so reload (F4) works too
+  (dolist (buf (buffer-list))
+    (with-current-buffer buf
+      (cond ((derived-mode-p 'prog-mode) (flyspell-prog-mode))
+            ((derived-mode-p 'text-mode) (flyspell-mode 1))))))
+
+;; ============================================================
 ;; 18. EPUB reading & Vertical CJK Reader  (yuleshow-nov.el)
 ;; ============================================================
 (load (concat user-emacs-directory "yuleshow-nov"))
