@@ -7,12 +7,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# ---- Remove ~/.emacs if it exists (no longer needed) ----
-if [ -L "$HOME/.emacs" ] || [ -f "$HOME/.emacs" ]; then
-    echo "Removing ~/.emacs (using ~/.emacs.d/init.el instead)"
-    rm "$HOME/.emacs"
-fi
-
 # ---- ~/.emacs.d -> this folder ----
 if [ -L "$HOME/.emacs.d" ]; then
     echo "~/.emacs.d is already a symlink -> $(readlink "$HOME/.emacs.d")"
