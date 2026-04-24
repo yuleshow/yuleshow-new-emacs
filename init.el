@@ -548,12 +548,51 @@ With prefix argument, use full path."
 ;; ============================================================
 (load (concat user-emacs-directory "yuleshow-org"))
 
+;; ============================================================
+;; 20. mu4e: email client (mbsync + msmtp)
+;; ============================================================
+(add-to-list 'load-path "/opt/homebrew/share/emacs/site-lisp/mu/mu4e")
+(require 'mu4e)
+
+(setq mu4e-maildir "~/.mail"
+      mu4e-get-mail-command "mbsync -a"
+      mu4e-update-interval 300
+      mu4e-change-filenames-when-moving t)
+
+(setq mu4e-contexts
+      (list
+       (make-mu4e-context
+        :name "iCloud"
+        :match-func (lambda (msg) (when msg (string-match-p "^/icloud" (mu4e-message-field msg :maildir))))
+        :vars '((user-mail-address  . "yuleshow@mac.com")
+                (user-full-name     . "Wanshu Shao")
+                (mu4e-sent-folder   . "/icloud/Sent Messages")
+                (mu4e-trash-folder  . "/icloud/Trash")
+                (mu4e-refile-folder . "/icloud/Archive")
+                (message-sendmail-extra-arguments . ("--account=icloud"))))
+
+       (make-mu4e-context
+        :name "Gmail"
+        :match-func (lambda (msg) (when msg (string-match-p "^/gmail" (mu4e-message-field msg :maildir))))
+        :vars '((user-mail-address  . "yuleshow@gmail.com")
+                (user-full-name     . "Wanshu Shao")
+                (mu4e-sent-folder   . "/gmail/[Gmail]/Sent Mail")
+                (mu4e-trash-folder  . "/gmail/[Gmail]/Trash")
+                (mu4e-refile-folder . "/gmail/[Gmail]/All Mail")
+                (mu4e-sent-messages-behavior . delete)
+                (message-sendmail-extra-arguments . ("--account=gmail"))))))
+
+(setq send-mail-function         'sendmail-send-it
+      message-send-mail-function 'message-send-mail-with-sendmail
+      sendmail-program           (executable-find "msmtp"))
+
 ;;; dot.emacs ends here
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(org-agenda-files '("~/yuleshow@gmail.com/Org Notes/yuleshow.org"))
  '(package-selected-packages nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
