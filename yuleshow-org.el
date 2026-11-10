@@ -29,6 +29,186 @@
 ;; Ensure tags align automatically when you change a headline
 (setq org-auto-align-tags t)
 
+;; Keep list text unindented and highlight numbered-list item lines.
+(setq org-list-indent-offset 0
+      org-adapt-indentation nil
+      org-startup-indented nil)
+
+(defun yuleshow-org--update-wrap-prefixes (beg end &optional _old-length)
+  "Indent soft-wrapped continuations like their physical Org lines."
+  (save-excursion
+    (let ((start (progn (goto-char beg) (line-beginning-position)))
+          (finish (progn (goto-char end) (line-beginning-position 2))))
+      (with-silent-modifications
+        (remove-text-properties start finish '(wrap-prefix nil))
+        (goto-char start)
+          (while (re-search-forward "^\\([ \t]+\\)\\S-" finish t)
+          (put-text-property
+           (line-beginning-position) (line-end-position)
+            'wrap-prefix (match-string-no-properties 1)))))))
+
+(defun yuleshow-org-indent-wrapped-lines ()
+  "Preserve leading whitespace on visually wrapped Org lines."
+  (yuleshow-org--update-wrap-prefixes (point-min) (point-max))
+  (add-hook 'after-change-functions
+            #'yuleshow-org--update-wrap-prefixes nil t))
+
+(add-hook 'org-mode-hook #'yuleshow-org-indent-wrapped-lines)
+
+(defun yuleshow-org--pad-numbered-list-markers (original-function struct prevs)
+  "Run ORIGINAL-FUNCTION while preserving each list's marker width."
+  (let ((widths (make-hash-table :test #'eql)))
+    (dolist (entry struct)
+      (let* ((item (car entry))
+             (bullet (org-list-get-bullet item struct))
+             (width (and (string-match "\\`\\([0-9]+\\)[.)][ \t]*\\'" bullet)
+                         (length (match-string 1 bullet)))))
+        (when width
+          (let ((list-begin (org-list-get-list-begin item struct prevs)))
+            (puthash list-begin (max width (gethash list-begin widths 0))
+                     widths)))))
+    (funcall original-function struct prevs)
+    (dolist (entry struct)
+      (let* ((item (car entry))
+             (bullet (org-list-get-bullet item struct))
+             (width (gethash (org-list-get-list-begin item struct prevs)
+                             widths)))
+        (when (and width
+                   (string-match "\\`\\([0-9]+\\)\\([.)]\\)[ \t]*\\'" bullet))
+          (let ((number (string-to-number (match-string 1 bullet)))
+                (delimiter (match-string 2 bullet)))
+            (org-list-set-bullet
+             item struct
+             (org-list-bullet-string
+              (format (format "%%0%dd%%s" width) number delimiter)))))))
+    struct))
+
+(with-eval-after-load 'org-list
+  (unless (advice-member-p #'yuleshow-org--pad-numbered-list-markers
+                           'org-list-struct-fix-bul)
+    (advice-add 'org-list-struct-fix-bul :around
+                #'yuleshow-org--pad-numbered-list-markers)))
+
+(defface yuleshow-org-numbered-list-marker
+  '((t (:foreground "#ffff00" :weight bold)))
+  "Face for numbered Org list markers such as `1.'."
+  :group 'org-faces)
+
+(defun yuleshow-org-fontify-numbered-list-markers ()
+  "Highlight complete numbered list item lines."
+  (font-lock-add-keywords
+   nil
+   '(("^[ \t]*[0-9]+\\.\\(?:[ \t]+.*\\)?$"
+      0 'yuleshow-org-numbered-list-marker prepend))))
+
+(add-hook 'org-mode-hook #'yuleshow-org-fontify-numbered-list-markers)
+
+(defun yuleshow-org-return ()
+  "Expand a three-digit dated list item, or run the usual Org Return command."
+  (interactive)
+  (let ((date-entry
+         (and (eolp)
+              (save-excursion
+                (beginning-of-line)
+                (when (looking-at
+                       "^[ \t]*[0-9]\\{3\\}\\.[ \t]+\\([0-9]\\{4\\}\\)\\([0-9]\\{2\\}\\)\\([0-9]\\{2\\}\\)[ \t]*$")
+                  (list (current-indentation)
+                        (match-string 1)
+                        (match-string 2)
+                        (match-string 3)))))))
+    (if (null date-entry)
+        (call-interactively #'org-return)
+      (let ((field-indent (make-string (+ (nth 0 date-entry) 5) ?\s)))
+        (insert "\n\n" field-indent
+                "時間：" (nth 1 date-entry) "年"
+                (number-to-string (string-to-number (nth 2 date-entry))) "月"
+                (number-to-string (string-to-number (nth 3 date-entry))) "日\n"
+                field-indent "地點：\n")
+        (forward-line -2)
+        (end-of-line)))))
+
+(defvar-local yuleshow-org--heading-list-cycle-states nil
+  "Cycle direction for Org headings whose sections contain plain lists.")
+
+(defun yuleshow-org--heading-list-state-entry (heading)
+  "Return the cycle-state entry for HEADING, creating it when needed."
+  (let (entry live-entries)
+    (dolist (candidate yuleshow-org--heading-list-cycle-states)
+      (when (marker-buffer (car candidate))
+        (push candidate live-entries)
+        (when (= heading (marker-position (car candidate)))
+          (setq entry candidate))))
+    (setq yuleshow-org--heading-list-cycle-states (nreverse live-entries))
+    (or entry
+        (let ((new-entry (cons (copy-marker heading) nil)))
+          (push new-entry yuleshow-org--heading-list-cycle-states)
+          new-entry))))
+
+(defun yuleshow-org--first-list-item-in-section ()
+  "Return the first plain-list item in the current heading's section."
+  (save-excursion
+    (org-back-to-heading t)
+    (forward-line 1)
+    (let ((section-end
+           (save-excursion
+             (if (re-search-forward org-heading-regexp nil t)
+                 (line-beginning-position)
+               (point-max)))))
+      (catch 'item
+        (while (< (point) section-end)
+          (let ((item (org-in-item-p)))
+            (when (and item (= item (line-beginning-position)))
+              (throw 'item item)))
+          (forward-line 1))))))
+
+(defun yuleshow-org--fold-list-level (item)
+  "Show ITEM's list but fold wording below every item at its level."
+  (let* ((struct (save-excursion
+                   (goto-char item)
+                   (org-list-struct)))
+         (indent (org-list-get-ind item struct)))
+    (dolist (entry struct)
+      (let ((other-item (car entry)))
+        (when (= indent (org-list-get-ind other-item struct))
+          (org-list-set-item-visibility other-item struct 'folded))))))
+
+(defun yuleshow-org-cycle (&optional arg)
+  "Cycle list headings from full to list-only, closed, list-only, and full."
+  (interactive "P")
+  (let ((item (and (null arg)
+                   (org-at-heading-p)
+                   (yuleshow-org--first-list-item-in-section))))
+    (if (not item)
+        (org-cycle arg)
+      (let* ((heading (line-beginning-position))
+             (state-entry (yuleshow-org--heading-list-state-entry heading))
+             (stored-state (cdr state-entry))
+             (visible-state
+              (cond
+               ((org-fold-folded-p (line-end-position)) 'closed)
+               ((save-excursion
+                  (goto-char item)
+                  (org-fold-folded-p (line-end-position)))
+                (if (eq stored-state 'list-expanding)
+                    'list-expanding
+                  'list-closing))
+               (t 'full))))
+        (pcase visible-state
+          ('full
+           (org-fold-show-subtree)
+           (yuleshow-org--fold-list-level item)
+           (setcdr state-entry 'list-closing))
+          ('list-closing
+           (org-fold-hide-subtree)
+           (setcdr state-entry 'closed))
+          ('closed
+           (org-fold-show-subtree)
+           (yuleshow-org--fold-list-level item)
+           (setcdr state-entry 'list-expanding))
+          ('list-expanding
+           (org-fold-show-subtree)
+           (setcdr state-entry 'full)))))))
+
 ;; ============================================================
 ;; §2  Food List & Dietary Capture
 ;;     Read food options from EatingDiary folder.
@@ -217,9 +397,14 @@ Expected format: Name|Address|City|State|ChineseName"
 ;; Bind the command to C-c s (s for shopping)
 (global-set-key (kbd "C-c s") 'yuleshow-insert-shopping)
 
-;; Rebind org-set-property to C-c p
+;; Rebind org-set-property to C-c p and keep standard C-k behavior.
 (with-eval-after-load 'org
-  (define-key org-mode-map (kbd "C-c p") 'org-set-property))
+  (define-key org-mode-map (kbd "C-c p") #'org-set-property)
+  (define-key org-mode-map (kbd "TAB") #'yuleshow-org-cycle)
+  (define-key org-mode-map (kbd "<tab>") #'yuleshow-org-cycle)
+  (define-key org-mode-map (kbd "RET") #'yuleshow-org-return)
+  (define-key org-mode-map (kbd "<return>") #'yuleshow-org-return)
+  (define-key org-mode-map [remap kill-line] nil))
 
 ;; ============================================================
 ;; §5c Medical List

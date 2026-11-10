@@ -3,7 +3,7 @@
 ;; Setup:
 ;;   ~/.emacs.d -> symlink to this folder (yuleshow-new-emacs/)
 ;;   ~/.emacs.d/init.el is loaded automatically by Emacs.
-;;   Run setup.sh to create symlinks automatically.
+;;   Run setup.sh on macOS/Linux or setup.ps1 on Windows.
 
 ;; ============================================================
 ;; 1. Package Sources
@@ -150,8 +150,9 @@
     (4 . "TW-Sung")
     (5 . "TW-Kai")
     (6 . "Huiwen-mincho")
-    (7 . "SentyWen"))
-  "Chinese fonts mapped to keys 1-7.")
+    (7 . "SentyWen")
+    (8 . "WenQuanYi Bitmap Song 16px"))
+  "Chinese fonts mapped to keys 1-8.")
 
 (defvar yuleshow-english-font-list
   '((1 . "EB Garamond")
@@ -291,7 +292,7 @@
 (defun yuleshow-prog-theme ()
   "Apply theme 9 (modus-vivendi) and Source Code Pro for programming buffers."
   (yuleshow-load-theme "modus-vivendi" "#000000" "#ffffff")
-  (face-remap-add-relative 'default :family "Hank Nerd Font Mono"))
+  (face-remap-add-relative 'default :family "Hack Nerd Font"))
 
 (add-hook 'prog-mode-hook #'yuleshow-prog-theme)
 
@@ -348,8 +349,9 @@
           (when (get-buffer buf)
             (with-current-buffer buf
               (text-scale-set 3))))))
-    (message "Yuleshow loaded. C-1..7=CN font, M-1..6=EN font, C-t 1..9=theme")
+    (message "Yuleshow loaded. C-1..8=CN font, M-1..6=EN font, C-t 1..9=theme")
     (find-file "~/yuleshow@gmail.com/Org Notes/yuleshow.org")
+    (find-file "~/yuleshow@gmail.com/Org Notes/yuleshow-socialmedia.org")
     ;; Apply OrgTheme to the startup org buffer
     (yuleshow-org-theme)))
 
@@ -381,6 +383,14 @@
 (define-key visual-line-mode-map [remap move-end-of-line]       nil)
 (define-key visual-line-mode-map [remap beginning-of-line]      nil)
 (define-key visual-line-mode-map [remap end-of-line]            nil)
+
+(defun yuleshow-end-of-line-and-trim ()
+  "Move to the physical line end and delete trailing spaces and tabs."
+  (interactive)
+  (end-of-line)
+  (delete-horizontal-space))
+
+(global-set-key (kbd "C-e") #'yuleshow-end-of-line-and-trim)
 
 ;; ============================================================
 ;; 14. bing-dict: M-/ to translate word at point
@@ -452,9 +462,15 @@ With prefix argument, use full path."
       (buffer-string))))
 
 (defun convert-to-traditional (beg end)
-  "Convert region from Simplified Chinese to Traditional Chinese."
+  "Convert region from Simplified Chinese to Traditional Chinese.
+Also replace \u201c/\u201d with 「」 and \u2018/\u2019 with 『』."
   (interactive "r")
-  (let ((result (yuleshow--opencc-convert (buffer-substring beg end) "s2t")))
+  (let* ((result (yuleshow--opencc-convert (buffer-substring beg end) "s2t"))
+         (result (replace-regexp-in-string "\u201c" "「" result))
+         (result (replace-regexp-in-string "\u201d" "」" result))
+         (result (replace-regexp-in-string "\u2018" "『" result))
+         (result (replace-regexp-in-string "\u2019" "』" result))
+         (result (replace-regexp-in-string "\"\\([^\"]*\\)\"" "「\\1」" result)))
     (delete-region beg end)
     (insert result)
     (message "Simplified → Traditional")))
@@ -486,14 +502,14 @@ With prefix argument, use full path."
 ;; 17. Insert Date / Time
 ;; ============================================================
 (defun my-insert-date ()
-  "Insert current date as <MM/DD/YY>."
+  "Insert current date as <mm/dd/yy>."
   (interactive)
   (insert (format-time-string "<%m/%d/%y>" (current-time))))
 
 (defun my-insert-time ()
-  "Insert current time as [HHMM]."
+  "Insert current time as hhmm."
   (interactive)
-  (insert (format-time-string "[%H%M]" (current-time))))
+  (insert (format-time-string "%H%M" (current-time))))
 
 (global-set-key (kbd "C-x d") #'my-insert-date)
 (global-set-key (kbd "C-x t") #'my-insert-time)
@@ -550,41 +566,54 @@ With prefix argument, use full path."
 
 ;; ============================================================
 ;; 20. mu4e: email client (mbsync + msmtp)
+;;     macOS only for now; Linux/Windows will be added later.
 ;; ============================================================
-(add-to-list 'load-path "/opt/homebrew/share/emacs/site-lisp/mu/mu4e")
-(require 'mu4e)
+(pcase yuleshow-os
+  ('macos
+   (let ((mu4e-path "/opt/homebrew/share/emacs/site-lisp/mu/mu4e"))
+     (when (file-directory-p mu4e-path)
+       (add-to-list 'load-path mu4e-path)
+       (require 'mu4e)
 
-(setq mu4e-maildir "~/.mail"
-      mu4e-get-mail-command "mbsync -a"
-      mu4e-update-interval 300
-      mu4e-change-filenames-when-moving t)
+       (setq mu4e-maildir "~/.mail"
+             mu4e-get-mail-command "mbsync -a"
+             mu4e-update-interval 300
+             mu4e-change-filenames-when-moving t)
 
-(setq mu4e-contexts
-      (list
-       (make-mu4e-context
-        :name "iCloud"
-        :match-func (lambda (msg) (when msg (string-match-p "^/icloud" (mu4e-message-field msg :maildir))))
-        :vars '((user-mail-address  . "yuleshow@mac.com")
-                (user-full-name     . "Wanshu Shao")
-                (mu4e-sent-folder   . "/icloud/Sent Messages")
-                (mu4e-trash-folder  . "/icloud/Trash")
-                (mu4e-refile-folder . "/icloud/Archive")
-                (message-sendmail-extra-arguments . ("--account=icloud"))))
+       (setq mu4e-contexts
+             (list
+              (make-mu4e-context
+               :name "iCloud"
+               :match-func (lambda (msg) (when msg (string-match-p "^/icloud" (mu4e-message-field msg :maildir))))
+               :vars '((user-mail-address  . "yuleshow@mac.com")
+                       (user-full-name     . "Wanshu Shao")
+                       (mu4e-sent-folder   . "/icloud/Sent Messages")
+                       (mu4e-trash-folder  . "/icloud/Trash")
+                       (mu4e-refile-folder . "/icloud/Archive")
+                       (message-sendmail-extra-arguments . ("--account=icloud"))))
 
-       (make-mu4e-context
-        :name "Gmail"
-        :match-func (lambda (msg) (when msg (string-match-p "^/gmail" (mu4e-message-field msg :maildir))))
-        :vars '((user-mail-address  . "yuleshow@gmail.com")
-                (user-full-name     . "Wanshu Shao")
-                (mu4e-sent-folder   . "/gmail/[Gmail]/Sent Mail")
-                (mu4e-trash-folder  . "/gmail/[Gmail]/Trash")
-                (mu4e-refile-folder . "/gmail/[Gmail]/All Mail")
-                (mu4e-sent-messages-behavior . delete)
-                (message-sendmail-extra-arguments . ("--account=gmail"))))))
+              (make-mu4e-context
+               :name "Gmail"
+               :match-func (lambda (msg) (when msg (string-match-p "^/gmail" (mu4e-message-field msg :maildir))))
+               :vars '((user-mail-address  . "yuleshow@gmail.com")
+                       (user-full-name     . "Wanshu Shao")
+                       (mu4e-sent-folder   . "/gmail/[Gmail]/Sent Mail")
+                       (mu4e-trash-folder  . "/gmail/[Gmail]/Trash")
+                       (mu4e-refile-folder . "/gmail/[Gmail]/All Mail")
+                       (mu4e-sent-messages-behavior . delete)
+                       (message-sendmail-extra-arguments . ("--account=gmail"))))))
 
-(setq send-mail-function         'sendmail-send-it
-      message-send-mail-function 'message-send-mail-with-sendmail
-      sendmail-program           (executable-find "msmtp"))
+       (setq send-mail-function         'sendmail-send-it
+             message-send-mail-function 'message-send-mail-with-sendmail
+             sendmail-program           (executable-find "msmtp")))))
+
+  ('linux
+   ;; TODO: configure mu4e for Linux
+   nil)
+
+  ('windows
+   ;; TODO: configure mu4e for Windows
+   nil))
 
 ;;; dot.emacs ends here
 (custom-set-variables
