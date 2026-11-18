@@ -22,6 +22,10 @@ junction on Windows). It creates the backup and autosave directories under
 `~/yuleshow-emacs-backup`. If `~/.emacs.d` already exists, it is moved to the
 first available `.emacs.d.bak`, `.emacs.d.bak.1`, etc.
 
+On macOS, if Homebrew's mu4e is installed, the configuration checks that
+Transient provides the API mu4e needs and installs an updated ELPA version if
+the bundled Emacs version is too old.
+
 Running the installer requires internet access and `curl` plus `tar` on
 macOS/Linux. Windows uses PowerShell's built-in download and ZIP tools. On
 Windows, a directory junction is used so administrator privileges and

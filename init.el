@@ -573,6 +573,16 @@ Also replace \u201c/\u201d with 「」 and \u2018/\u2019 with 『』."
    (let ((mu4e-path "/opt/homebrew/share/emacs/site-lisp/mu/mu4e"))
      (when (file-directory-p mu4e-path)
        (add-to-list 'load-path mu4e-path)
+       (require 'transient)
+       (unless (fboundp 'transient--set-layout)
+         (message "Installing an updated Transient package for mu4e...")
+         (package-refresh-contents)
+         (let ((package-install-upgrade-built-in t))
+           (package-install 'transient t))
+         (unload-feature 'transient t)
+         (require 'transient)
+         (unless (fboundp 'transient--set-layout)
+           (error "Installed Transient does not provide transient--set-layout")))
        (require 'mu4e)
 
        (setq mu4e-maildir "~/.mail"
