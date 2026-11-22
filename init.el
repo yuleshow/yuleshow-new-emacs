@@ -171,6 +171,8 @@
 (defvar yuleshow-current-theme-name "Default")
 (defvar-local yuleshow--cn-cookie nil)
 (defvar-local yuleshow--en-cookie nil)
+(defvar-local yuleshow--silver-line-spacing-saved nil)
+(defvar-local yuleshow--silver-line-spacing-active nil)
 
 ;; ---- English Font (per-buffer) ----
 (defun yuleshow-set-english-font (font-name)
@@ -178,6 +180,16 @@
   (interactive
    (list (completing-read "English font: "
                           (mapcar #'cdr yuleshow-english-font-list))))
+  (cond
+   ((string-equal font-name "Silver")
+    (unless yuleshow--silver-line-spacing-active
+      (setq yuleshow--silver-line-spacing-saved line-spacing
+            yuleshow--silver-line-spacing-active t))
+    (setq line-spacing -2))
+   (yuleshow--silver-line-spacing-active
+    (setq line-spacing yuleshow--silver-line-spacing-saved
+          yuleshow--silver-line-spacing-active nil
+          yuleshow--silver-line-spacing-saved nil)))
   (when yuleshow--en-cookie
     (face-remap-remove-relative yuleshow--en-cookie)
     (setq yuleshow--en-cookie nil))
