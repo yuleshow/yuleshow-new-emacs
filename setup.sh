@@ -11,8 +11,6 @@ SOURCE_DIR=""
 
 if [ -f "$SCRIPT_DIR/init.el" ]; then
     SOURCE_DIR="$SCRIPT_DIR"
-elif [ -f "$INSTALL_DIR/init.el" ]; then
-    SOURCE_DIR="$INSTALL_DIR"
 else
     command -v curl >/dev/null 2>&1 || {
         echo "Error: curl is required to download the configuration." >&2
@@ -33,8 +31,17 @@ else
         echo "Error: downloaded archive does not contain init.el." >&2
         exit 1
     fi
-
     mkdir -p "$(dirname "$INSTALL_DIR")"
+    if [ -e "$INSTALL_DIR" ] || [ -L "$INSTALL_DIR" ]; then
+        backup_dir="${INSTALL_DIR}.bak"
+        suffix=1
+        while [ -e "$backup_dir" ] || [ -L "$backup_dir" ]; do
+            backup_dir="${INSTALL_DIR}.bak.${suffix}"
+            suffix=$((suffix + 1))
+        done
+        mv "$INSTALL_DIR" "$backup_dir"
+        echo "Backed up existing $INSTALL_DIR to $backup_dir"
+    fi
     mv "$downloaded_dir" "$INSTALL_DIR"
     SOURCE_DIR="$INSTALL_DIR"
 fi

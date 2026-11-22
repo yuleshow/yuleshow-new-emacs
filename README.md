@@ -16,6 +16,42 @@ Download the installer for your operating system and run it:
   .\setup.ps1
   ```
 
+You can also run the macOS/Linux installer directly without saving it:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/yuleshow/yuleshow-new-emacs/main/setup.sh | bash
+```
+
+## Update
+
+Rerun the installer to download and install the latest version:
+
+- **macOS / Linux (direct):**
+  ```sh
+  curl -fsSL https://raw.githubusercontent.com/yuleshow/yuleshow-new-emacs/main/setup.sh | bash
+  ```
+- **macOS / Linux (downloaded script):**
+  ```sh
+  curl -fsSLO https://raw.githubusercontent.com/yuleshow/yuleshow-new-emacs/main/setup.sh
+  bash setup.sh
+  ```
+- **Windows PowerShell:**
+  ```powershell
+  Set-ExecutionPolicy -Scope Process Bypass
+  Invoke-WebRequest https://raw.githubusercontent.com/yuleshow/yuleshow-new-emacs/main/setup.ps1 -OutFile setup.ps1
+  .\setup.ps1
+  ```
+- **Local Git clone:**
+  ```sh
+  cd yuleshow-new-emacs
+  git pull
+  bash setup.sh
+  ```
+
+Updates replace `~/.local/share/yuleshow-emacs` on macOS/Linux or
+`%LOCALAPPDATA%\yuleshow-emacs` on Windows. The previous installation directory
+is retained as a numbered `.bak` directory.
+
 The installer downloads the latest configuration from this repository if it
 isn't already available locally, then links it as `~/.emacs.d` (a directory
 junction on Windows). It creates the backup and autosave directories under

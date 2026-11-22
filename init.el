@@ -230,6 +230,9 @@
     (global-set-key (kbd (format "M-%d" key))
                     (yuleshow--make-en-cmd font))))
 
+;; C-9 is separate from the English shortcut list.
+(global-set-key (kbd "C-9") (yuleshow--make-en-cmd "Silver"))
+
 ;; ============================================================
 ;; 10. Theme Configuration: C-t prefix (per-buffer via face-remap)
 ;; ============================================================
@@ -349,7 +352,7 @@
           (when (get-buffer buf)
             (with-current-buffer buf
               (text-scale-set 3))))))
-    (message "Yuleshow loaded. C-1..8=CN font, M-1..6=EN font, C-t 1..9=theme")
+    (message "Yuleshow loaded. C-1..8=CN font, C-9=Silver, M-1..6=EN font, C-t 1..9=theme")
     (find-file "~/yuleshow@gmail.com/Org Notes/yuleshow.org")
     (find-file "~/yuleshow@gmail.com/Org Notes/yuleshow-socialmedia.org")
     ;; Apply OrgTheme to the startup org buffer

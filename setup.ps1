@@ -13,12 +13,20 @@ else {
     $installDir = Join-Path $localAppData 'yuleshow-emacs'
 }
 
+function Get-BackupPath([string]$Path) {
+    $candidate = "$Path.bak"
+    $suffix = 1
+    while ((Test-Path -LiteralPath $candidate) -or
+           (Get-Item -LiteralPath $candidate -Force -ErrorAction SilentlyContinue)) {
+        $candidate = "$Path.bak.$suffix"
+        $suffix++
+    }
+    return $candidate
+}
+
 $sourceDir = $null
 if (Test-Path -LiteralPath (Join-Path $scriptDir 'init.el')) {
     $sourceDir = $scriptDir
-}
-elseif (Test-Path -LiteralPath (Join-Path $installDir 'init.el')) {
-    $sourceDir = $installDir
 }
 else {
     $tempDir = Join-Path ([IO.Path]::GetTempPath()) ([Guid]::NewGuid().ToString())
@@ -35,23 +43,17 @@ else {
         }
 
         New-Item -ItemType Directory -Path (Split-Path -Parent $installDir) -Force | Out-Null
+        if (Test-Path -LiteralPath $installDir) {
+            $backupDir = Get-BackupPath $installDir
+            Move-Item -LiteralPath $installDir -Destination $backupDir
+            Write-Output "Backed up existing $installDir to $backupDir"
+        }
         Move-Item -LiteralPath $downloadedDir -Destination $installDir
         $sourceDir = $installDir
     }
     finally {
         Remove-Item -LiteralPath $tempDir -Recurse -Force
     }
-}
-
-function Get-BackupPath([string]$Path) {
-    $candidate = "$Path.bak"
-    $suffix = 1
-    while ((Test-Path -LiteralPath $candidate) -or
-           (Get-Item -LiteralPath $candidate -Force -ErrorAction SilentlyContinue)) {
-        $candidate = "$Path.bak.$suffix"
-        $suffix++
-    }
-    return $candidate
 }
 
 $configItem = Get-Item -LiteralPath $configDir -Force -ErrorAction SilentlyContinue

@@ -38,6 +38,7 @@ macOS, Meta is mapped to **Command** in this configuration).
 | `M-6` | Courier New |
 | `M-0` | Menlo |
 | `M-9` | Monaco |
+| `C-9` | Silver |
 
 Programming buffers use Hack Nerd Font. To select a font by name instead, run
 `M-x yuleshow-set-chinese-font` or `M-x yuleshow-set-english-font`.
